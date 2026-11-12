@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <path d="M48 4 L88 18 V50 C88 74 70 90 48 94 C26 90 8 74 8 50 V18 Z" fill="#4ADE80"/>
+  <path d="M48 4 L88 18 V50 C88 74 70 90 48 94 C26 90 8 74 8 50 V18 Z" fill="none" stroke="#06210f" stroke-width="3"/>
+  <text x="48" y="60" font-family="-apple-system,Segoe UI,sans-serif" font-size="34" font-weight="800" fill="#06210f" text-anchor="middle">AU</text>
+</svg>

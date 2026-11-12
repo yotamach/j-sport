@@ -1,0 +1,104 @@
+:root {
+  --bg: #0b0f14;
+  --surface: #12181f;
+  --surface-alt: #16341f;
+  --border: #1f2937;
+  --text: #e5e7eb;
+  --text-dim: #9ca3af;
+  --text-faint: #6b7280;
+  --accent: #4ade80;
+  --accent-contrast: #06210f;
+  --danger: #f87171;
+  --warn: #facc15;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+  font-family: "SF Mono", "Roboto Mono", Consolas, monospace;
+}
+
+.btn-primary {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
