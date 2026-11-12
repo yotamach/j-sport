@@ -1,0 +1,25 @@
+[project]
+name = "jsport-api"
+version = "0.1.0"
+description = "Jsport API — GPS-based sports social network"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.162",
+  "uvicorn[standard]>=0.54",
+  "sqlalchemy>=2.1",
+  "psycopg[binary]>=3.3",
+  "geoalchemy2>=0.21",
+  "alembic>=1.20",
+  "pydantic-settings>=2.16",
+  "pyjwt>=2.15",
+  "bcrypt>=5.0",
+  "httpx>=0.28",
+  "python-multipart>=0.0.33",
+  "email-validator>=2.3",
+]
+
+[dependency-groups]
+dev = ["pytest>=9.2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

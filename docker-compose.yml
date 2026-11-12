@@ -1,23 +1,28 @@
-version: "3.9"
-
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
+  db:
+    image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_USER: football
-      POSTGRES_PASSWORD: football
-      POSTGRES_DB: football_portal
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_USER: jsport
+      POSTGRES_PASSWORD: jsport
+      POSTGRES_DB: jsport
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jsport"]
+      interval: 3s
+      retries: 20
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://jsport:jsport@db:5432/jsport
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-0000}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+    ports: ["8000:8000"]
+    volumes: [media:/app/media]
+    depends_on:
+      db: { condition: service_healthy }
 
 volumes:
-  postgres_data:
+  pgdata:
+  media:
