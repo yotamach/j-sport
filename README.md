@@ -1,92 +1,82 @@
-# Football Portal
+# Jsport
 
-A football portal built as an SSR Next.js frontend + NestJS backend monorepo:
-
-- **Home** — your favorite team's hero card, last result, next fixture, league standings, competitions, full squad and transfer market.
-- **Live Matches** — every match live around the world right now, today's fixtures, and search by team. Scores update over WebSocket, pushed from the backend — the browser never polls.
-- **Leagues** — every league/competition available, grouped by country.
-
-## Stack
-
-| Layer | Choice |
-| --- | --- |
-| Frontend | Next.js 14 (App Router, SSR) |
-| Backend | NestJS |
-| Data source | [API-Football](https://www.api-football.com/) (RapidAPI) |
-| Real-time | Backend polls API-Football server-side and rebroadcasts diffs over its own Socket.io WebSocket gateway — no data provider offers an affordable public push feed, so this is the standard way to get a real-time feel on top of a REST provider |
-| DB | PostgreSQL via Prisma (users + favorite team) |
-| Cache | Redis (falls back to in-memory automatically if Redis isn't running, so local dev works without Docker) |
-| Auth | JWT, issued by NestJS, stored as an httpOnly cookie by Next.js route handlers |
-
-## Monorepo layout
+A GPS-based sports social network: find free and occupied courts near you, take a court for a game, and meet people to play with. Built from `Jsport_HLD_0.0`.
 
 ```
-apps/
-  web/    Next.js frontend
-  api/    NestJS backend
-packages/
-  shared-types/   TS interfaces shared by both apps (League, Team, Fixture, Standing, ...)
+jsport/
+├── backend/   FastAPI + SQLAlchemy 2 + PostGIS (Python 3.12+)
+├── mobile/    Expo SDK 58 + expo-router + TanStack Query (TypeScript)
+└── docker-compose.yml
 ```
 
-## Demo mode (no API key needed)
+## What's in this MVP (phase 1)
 
-The backend runs in **MOCK_MODE** whenever `API_FOOTBALL_KEY` is unset, serving realistic sample
-data for a fictional league (Atlas United and rivals) so the whole app — including the WebSocket
-live-score feed — works immediately with `pnpm dev`. A banner in the UI says when you're in demo
-mode. Swap in a real API-Football key to switch to live data automatically.
+| Spec section | Status |
+|---|---|
+| Splash screen, sign-up (email) and Facebook login; favorite sport is required before first use | ✅ |
+| Home top bar: menu (left), app name → home (center), profile (right) | ✅ |
+| "Show" filter: all / free / occupied / paid, with a sport sub-filter for free/occupied | ✅ |
+| Radius: 1 (default) / 5 / 10 / 20 / 30 / 50 km / custom | ✅ |
+| Court list: name, distance, green/red status, sorted by distance | ✅ |
+| Court screen: photo (camera/library upload), name, distance, play count, status, navigation via Waze/Google/Apple Maps | ✅ |
+| Take court: players count, "looking for players", chat lock; 90-min timer | ✅ |
+| Occupied court: read-only options, countdown, who holds it, join if open | ✅ |
+| Recent players and players near the court (same sport, within 2 km) | ✅ |
+| Notifications: court freed (long-press a row), 15-min warning with **+45 min** action, release from the banner | ✅ (Expo push) |
+| Profile screen, History, About | ✅ |
+| Side menu (75% width, left to right) | ✅ (other items open "coming soon" screens) |
+| Friends, Tournaments, Teams, Challenge/rankings, Chats, Search, Favorites, Settings | ⏭ phase 2 |
 
-## Getting started
+## Run it
 
-1. **Install dependencies** (this is a pnpm workspace):
-   ```bash
-   pnpm install
-   ```
+### Backend
+```bash
+docker compose up -d db            # PostGIS on :5432
+cd backend
+uv sync                             # or: pip install -e . pytest
+cp .env.example .env
+alembic upgrade head
+python -m app.seed                  # demo courts in Tel Aviv and Be'er Sheva
+uvicorn app.main:app --reload --host 0.0.0.0
+```
+API docs: http://localhost:8000/docs. Or run everything with `docker compose up --build`.
 
-2. **Start Postgres + Redis** (or point `DATABASE_URL`/`REDIS_URL` at your own instances):
-   ```bash
-   docker compose up -d
-   ```
+Tests run against a real PostGIS database:
+```bash
+createdb jsport_test && psql -d jsport_test -c 'CREATE EXTENSION postgis'
+pytest
+```
 
-3. **Configure env vars**:
-   ```bash
-   cp apps/api/.env.example apps/api/.env
-   cp apps/web/.env.example apps/web/.env
-   ```
-   To use live data instead of demo mode, sign up at [RapidAPI's API-Football](https://rapidapi.com/api-sports/api/api-football)
-   and paste your key into `apps/api/.env` as `API_FOOTBALL_KEY`. Leave it blank to stay in demo mode.
+### Mobile
+```bash
+cd mobile
+npm install
+EXPO_PUBLIC_API_URL=http://<your-LAN-IP>:8000 npx expo start
+```
+- Push notifications need a physical device and an EAS project id (`npx eas-cli init`). Interactive banner actions need a development build (`npx expo run:ios|android`) rather than Expo Go.
+- Facebook login appears once `EXPO_PUBLIC_FACEBOOK_APP_ID` is set. The backend checks the token against the Graph API and reads only id, name, email and picture.
+- To test with the seed data in a simulator, set the simulated location to Tel Aviv (32.08, 34.78).
 
-4. **Run database migrations**:
-   ```bash
-   pnpm --filter @football-portal/api exec prisma migrate dev
-   ```
+## API overview
 
-5. **Run both apps**:
-   ```bash
-   pnpm dev
-   ```
-   - Web: http://localhost:3000
-   - API: http://localhost:4000/api
+| Method | Path | |
+|---|---|---|
+| POST | `/auth/register`, `/auth/login`, `/auth/facebook` | Returns JWT + `needs_onboarding` |
+| GET/PATCH | `/me` | Profile |
+| PUT | `/me/location`, `/me/push-token` | Last known location / Expo push token |
+| GET | `/me/history?lat&lng` | Courts I played at, with live status |
+| GET | `/courts?lat&lng&radius_km&filter&sport&order` | Nearby courts (PostGIS `ST_DWithin`) |
+| GET | `/courts/{id}?lat&lng` | Court details, active session, recent and nearby players |
+| POST | `/courts/{id}/photo` | Upload a photo (JPEG/PNG/WebP, max 8 MB) |
+| POST | `/courts/{id}/sessions` | Take the court (409 if occupied or you already hold one) |
+| POST | `/sessions/{id}/release` · `/extend` · `/join` | Holder-only release/extend (+45, once); join if open |
+| POST/DELETE | `/courts/{id}/watch` | One-shot "tell me when it's free" |
 
-## Notes on API-Football field mapping
+**Timers:** a session is active while `ended_at IS NULL AND expires_at > now()`, so status never depends on a cron. A background loop (`app/scheduler.py`, every 30 s) sends the 15-minute warning and the "court is free" pushes. With more than one API instance, move it to a single worker, or keep it as is: rows are claimed with `FOR UPDATE SKIP LOCKED`.
 
-The response-mapping code in `apps/api/src/football/api-football.mappers.ts` follows API-Football's
-documented v3 schema, but hasn't been exercised against a live key in this environment (no key was
-available while building this). If a field looks off once you plug in a real key, that file is the
-one place to fix it — everything downstream (controllers, WebSocket gateway, frontend) consumes the
-already-mapped shared types and shouldn't need to change.
+Durations are set in `.env`: `SESSION_MINUTES`, `EXTEND_MINUTES`, `WARN_BEFORE_MINUTES`, `MAX_EXTENSIONS`.
 
-Also worth knowing: free-tier API-Football plans often don't include `/transfers` or full `/players/squads`
-data for every league. `getTransfers`/`getSquad` in `football-api.service.ts` degrade gracefully
-(empty list / 404) if your plan doesn't cover a given team.
-
-Note: running `pnpm build` for `apps/web` while the API isn't running will print noisy
-`ECONNREFUSED`/`fetch failed` lines during Next's build-time page analysis — harmless, since every
-page here reads cookies and is correctly marked dynamic (`ƒ`) in the final route table, so nothing
-is actually pre-rendered against the API at build time.
-
-## Scripts
-
-- `pnpm dev` — run both apps in watch mode
-- `pnpm build` — build both apps
-- `pnpm typecheck` — typecheck both apps + shared-types
-- `pnpm --filter @football-portal/api exec prisma studio` — browse the Postgres data
+## Notes on the spec
+- **Sort order:** the spec's example puts the farthest court first. The list defaults to nearest first, and `order=desc` gives the spec's order if that was intended.
+- **"Friends who played here"** needs the Friends module, so for now the court screen shows how many distinct players have played there.
+- UI strings are in English; Hebrew/RTL is a phase 2 item.
